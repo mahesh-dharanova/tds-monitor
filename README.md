@@ -59,4 +59,8 @@ gitignored; `secrets.h.example` is the committed template.
 - `plan.md` — roadmap and chunks.
 - `architecture.md` — module boundaries and design decisions.
 - `current_state.md` — what's done, what's next (updated per verified chunk).
-- `docs/` — hardware wiring, calibration procedure, test log.
+- `docs/` — hardware wiring, calibration procedure, test log (`TEST_LOG.md` gets a dated
+  entry the same session as every hardware trial — see `AGENTS.md`'s documentation model).
+- Once real experimental data exists, write-ups get drafted in `mahesh-dharanova/publications`
+  (three styles), promoted to `dharanova-code/publications` only after v1 is fully tested and
+  demoed. This repo stays the engineering source of truth either way.

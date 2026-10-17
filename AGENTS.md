@@ -22,8 +22,25 @@ real temperature probe (fixed assumed-temperature constant; a DS18B20 is v2 only
 - Progress: `git log --oneline -15`, then `current_state.md`.
 - Roadmap: `plan.md` (stable; only changes on a real scope decision).
 - Design/module boundaries: `architecture.md` (stable; only changes on a real design decision).
-- Hardware-in-loop results: `docs/TEST_LOG.md` (dated entries, never overwritten).
+- Hardware-in-loop results: `docs/TEST_LOG.md` (dated entries, never overwritten, written the
+  same session the data was captured — not reconstructed later from memory).
 - Do not create HANDOFF or status files. Continuity is `current_state.md` + the commits.
+
+## Documentation model (three tiers — see `~/Dev/CLAUDE.md`'s workspace conventions)
+
+1. **This repo** — the engineering source of truth. `docs/TEST_LOG.md` gets a dated entry
+   the same session as every hardware trial (readings, observations, pass/fail), whether or
+   not it's the outcome hoped for. `current_state.md` updates in the same commit as every
+   verified chunk. Nothing here waits for the project to finish.
+2. **`mahesh-dharanova/publications`** (middle tier, informal) — once a chunk produces real
+   experimental data worth a write-up (starting around Chunk 2's hardware session), draft it
+   there under a new topic folder, in the three house styles (`templates/dharanova-strict`,
+   `templates/academic-imrad`, `templates/dharanova-narrative`). See that repo's own
+   `README.md`/`templates/README.md`.
+3. **`dharanova-code/publications`** (official) — only the `dharanova-strict` draft moves
+   here, only after v1 is fully tested and demoed, per that repo's `PUBLISHING_GUIDELINES.md`.
+   Never fabricate a number; every figure traces to a file in `data/` or is labelled
+   calculated/simulated/datasheet.
 
 ## Module boundary (the one rule that matters most here)
 
