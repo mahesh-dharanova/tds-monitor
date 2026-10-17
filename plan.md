@@ -15,12 +15,14 @@ Roadmap broken into chunks. Edit only on a real scope decision.
 
 1. [x] Scaffold — repo structure, docs, stub modules, git init.
    Verified: `scripts/compile.sh` succeeds on the empty orchestrator.
-2. [ ] Sensor + filter modules — wire the generic TDS module (5V/GND/A0), implement
+2. [x] Sensor + filter modules — wire the generic TDS module (5V/GND/A0), implement
    `sensor.cpp` (raw ADC read + voltage, 200ms window) and `filter.cpp` (spike rejection).
    First real contact with the module: observe its dry and reference-solution voltage swing,
-   since no datasheet exists. Confirm the Uno R4 WiFi's real ADC resolution on hardware.
-   Verified: `tests/run_tests.sh` covers filter edge cases; upload + monitor, dry vs
-   reference-solution readings logged in `docs/TEST_LOG.md`.
+   since no datasheet exists.
+   Verified: `tests/run_tests.sh` covers filter edge cases; upload + monitor, four
+   conditions logged in `docs/TEST_LOG.md` (dry air, an ambiguous early water sample,
+   distilled water, fresh tap water). ADC-resolution sanity check attempted but
+   inconclusive — not blocking, logged as an open question in `current_state.md`.
 3. [ ] Conductivity module — voltage→conductivity using a provisional default curve
    (explicitly flagged unverified), fixed assumed-temperature correction (constant from
    `config.h`, swap point for v2's DS18B20).

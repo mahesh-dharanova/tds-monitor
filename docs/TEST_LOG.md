@@ -42,10 +42,14 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
   — `ADC_RESOLUTION_BITS=14` is requested but not yet independently confirmed against this
   board's real behavior.
 
-## 2026-10-17 — Chunk 2: plain tap water
+## 2026-10-17 — Chunk 2: "tap water" (identity later found uncertain — see below)
 
-- Probe fully submerged in plain tap water (source/composition otherwise unknown — not a
-  calibration-grade reference, just a real conductive sample).
+- Probe fully submerged in what was described at the time as plain tap water
+  (source/composition otherwise unknown — not a calibration-grade reference, just a real
+  conductive sample). **Update, same day:** the user later clarified they aren't sure this
+  was genuine municipal tap water vs. filtered/RO drinking water — a fresh, confirmed tap
+  water sample was captured separately below. Keep this entry's data (it's real), but don't
+  treat it as "tap water" for any comparison — treat its true identity as unknown.
 - Reading, steady over 12+ consecutive seconds:
   ```
   {"ms":681000,"raw":331,"v":0.101,"v_filtered":0.101}
@@ -79,3 +83,45 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
   becomes available.
 - A0 needs to be reconnected to the TDS module's AOUT to resume normal sensor readings
   (not yet confirmed done as of this entry).
+
+## 2026-10-17 — Chunk 2: distilled water (confirmed genuine), the v1 calibration point
+
+- A0 reconnected to AOUT, confirmed by the reading changing away from the stuck ~0.96V
+  5V-jumper value.
+- Probe submerged in distilled water, user-confirmed as genuine distilled water (not the
+  ambiguous "tap water" sample above). Rinsed with distilled water before this test.
+- Reading, steady across two separate captures (10+ seconds each):
+  ```
+  {"ms":2987000,"raw":1663,"v":0.508,"v_filtered":0.507}
+  {"ms":3131000,"raw":1661,"v":0.507,"v_filtered":0.507}
+  ```
+- **Surprising and still unresolved:** this is noticeably *higher* than the earlier
+  ambiguous "tap water" sample (raw≈330, v≈0.101V), and distilled water should physically
+  read lower than any tap/drinking water, not higher. Possible explanations not yet
+  investigated: contamination of this specific distilled water sample or its container,
+  probe/needle condition, or something in the measurement chain. Logged honestly as an open
+  question rather than silently accepted as "clean" — flagged in `current_state.md`.
+- Per the user's decision: **this reading is kept as v1's single calibration point**
+  regardless of the anomaly (prototype-grade, not lab-grade) — a fresh, confirmed tap-water
+  sample is being captured next for comparison (see following entry).
+
+## 2026-10-17 — Chunk 2: fresh tap water (confirmed), for comparison
+
+- Probe moved from distilled water directly into freshly drawn tap water.
+- Reading settled quickly and held steady across 14+ seconds:
+  ```
+  {"ms":3347000,"raw":2363,"v":0.721,"v_filtered":0.721}
+  ```
+- **This resolves part of the earlier confusion, not all of it.** Ordering is now physically
+  sensible between the two water samples: fresh tap water (v=0.721V) reads higher than
+  distilled water (v=0.508V), as expected — more dissolved minerals, more conductivity. The
+  remaining open question is that distilled water's absolute reading (0.508V) is still far
+  from near-zero, which is what's actually unusual (not the tap-vs-distilled ordering,
+  which now checks out). Possible causes (container contamination, probe condition,
+  something in the measurement chain) are not yet investigated.
+- All four readings so far, for reference: dry air 0.006V < [ambiguous early "tap/filtered"
+  sample] 0.101V < distilled water 0.508V < fresh tap water 0.721V. The middle two don't
+  nest the way "distilled < any real water" would predict — distilled sits above the
+  ambiguous sample. Worth another distilled-water reading with a fresh, independently
+  verified sample before fully trusting it as the v1 calibration point, but not blocking
+  further work per the user's prototype-grade decision.

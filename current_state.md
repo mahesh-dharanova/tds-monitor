@@ -14,22 +14,23 @@ This is a pointer into git history for the next agent, not a duplicate of it.
   `arduino:renesas_uno:unor4wifi`; `tests/run_tests.sh` runs (no real assertions yet since
   modules are stubs).
 
-## In progress
+## Done (cont.)
 
-- Chunk 2 (sensor + filter): fully wired (VCC/GND/AOUT). `sensor.cpp` and `filter.cpp` are
-  real and hardware-verified across two conditions: dry-air baseline (`raw=21, v=0.006V`)
-  and plain tap water (`raw≈330, v≈0.101V`) — clear, steady separation between the two.
-  `filter.cpp` also host-tested (`tests/run_tests.sh` 6/6). Tap water is not a calibration
-  reference (unknown TDS), so this doesn't feed `conductivity.cpp`/`calibration.cpp` yet.
-  See `docs/TEST_LOG.md` for the full dated entries.
+- Chunk 2 (sensor + filter): complete. Fully wired (VCC/GND/AOUT), `sensor.cpp` and
+  `filter.cpp` real and hardware-verified across four conditions: dry air (`v=0.006V`), an
+  early ambiguous "tap water" sample later found to be of uncertain identity (`v=0.101V`),
+  distilled water — the confirmed v1 calibration point (`v=0.508V`), and fresh confirmed tap
+  water (`v=0.721V`). `filter.cpp` also host-tested (`tests/run_tests.sh` 6/6). Tap-vs-
+  distilled ordering is now physically sensible (tap > distilled); distilled water's
+  absolute value being far from near-zero remains an open question (see below). See
+  `docs/TEST_LOG.md` for full dated entries.
 
 ## Next
 
-- Reconnect A0 to the TDS module's AOUT (currently jumpered to 5V for the ADC test below) to
-  resume normal sensor readings. Once confirmed, Chunk 2 is complete.
-- `conductivity.cpp` (Chunk 3) and `calibration.cpp` (Chunk 4) can proceed once the probe is
-  in distilled water for the single calibration point (see decision below) — no second
-  reference standard needed for v1.
+- Chunk 3: `conductivity.cpp` gets real curve constants from the dry-air/distilled/tap data
+  points above.
+- Chunk 4: `calibration.cpp` applies the single calibration point (distilled water, v=0.508V)
+  as a near-zero/offset reference per the locked-in v1 design decision.
 
 ## Open questions / blockers
 
@@ -42,6 +43,12 @@ This is a pointer into git history for the next agent, not a duplicate of it.
 - v1 calibration is **single-point** (distilled water as a near-zero/offset reference),
   confirmed by the user — a second known-value standard (e.g. 1413 uS/cm) is deferred to v2
   alongside the DS18B20. See `architecture.md`'s key-decisions table.
+- **Distilled water's reading (v=0.508V) is far from near-zero**, higher than an earlier
+  ambiguous "tap water" sample (v=0.101V) and only modestly below fresh confirmed tap water
+  (v=0.721V). Tap-vs-distilled ordering is now physically sensible; the absolute distilled
+  value isn't. Not yet investigated (container contamination, probe condition, etc.) — kept
+  as the v1 calibration point anyway per the user's prototype-grade decision, but worth a
+  fresh distilled-water re-check before trusting it long-term.
 - No datasheet for the generic TDS module — the Claude-Chat draft's curve was for a
   different module (DFRobot SEN0244) it was never told about; `conductivity.cpp` still needs
   real curve constants derived from the dry-air/tap-water/distilled-water observations.
