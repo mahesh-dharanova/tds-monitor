@@ -16,19 +16,19 @@ This is a pointer into git history for the next agent, not a duplicate of it.
 
 ## In progress
 
-- Chunk 2 (sensor + filter): module's VCC/GND wired, blue power LED confirms the 5V supply
-  path. AOUT -> A0 not wired yet — no analog readings taken. `filter.cpp` is implemented for
-  real (median-of-5 + EMA) and host-tested (`tests/run_tests.sh` 6/6). `sensor.cpp` is
-  implemented for real (windowed ADC average) and compiles (`scripts/compile.sh`), but is
-  **not yet hardware-verified** — that needs AOUT wired and a real upload+monitor session.
-  See `docs/TEST_LOG.md` for the dated entries.
+- Chunk 2 (sensor + filter): fully wired (VCC/GND/AOUT). `sensor.cpp` and `filter.cpp` are
+  real and now hardware-verified — first live reading captured: dry-air baseline
+  `raw=21, v=0.006V`, steady across 6+ seconds. `filter.cpp` also host-tested
+  (`tests/run_tests.sh` 6/6). See `docs/TEST_LOG.md` for the full dated entries.
 
 ## Next
 
-- Wire AOUT -> A0, upload, and record the dry-air (and ideally reference-solution) raw/volts
-  reading in `docs/TEST_LOG.md`. This also confirms the Uno R4 WiFi's real ADC resolution —
-  once done, Chunk 2 is complete and `conductivity.cpp` (Chunk 3) can get real curve
-  constants instead of the current placeholder.
+- Dip the probe in tap water (or a known reference solution, if available) and capture that
+  reading too — the dry-air baseline alone doesn't show the module responding to a
+  conductive path. Also do a direct ADC-resolution sanity check (A0 jumpered to 5V) since
+  `ADC_RESOLUTION_BITS=14` is requested but not independently confirmed yet. Once both are
+  logged, Chunk 2 is complete and `conductivity.cpp` (Chunk 3) can get real curve constants
+  instead of the current placeholder.
 
 ## Open questions / blockers
 

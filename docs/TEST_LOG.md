@@ -23,3 +23,21 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
   (`scripts/compile.sh`) — not yet run on hardware, since AOUT isn't connected.
 - Next: wire AOUT -> A0, upload, and record the dry-air raw/voltage reading here before
   touching the probe to any reference solution.
+
+## 2026-10-17 — Chunk 2: first real reading, dry air baseline
+
+- AOUT -> A0 wired. `scripts/upload.sh /dev/ttyACM0` succeeded; monitored at 115200 baud.
+- Probe confirmed dry (open air, needles untouched) at capture time.
+- Reading, steady across 6+ consecutive seconds:
+  ```
+  {"ms":13000,"raw":21,"v":0.006,"v_filtered":0.006}
+  ```
+  `raw` computed against the requested 14-bit resolution (`ADC_RESOLUTION_BITS=14` in
+  `config.h`, max count 16383); `v = raw * 5.0 / 16383`, matches the printed value.
+- Dry-air baseline is ~0 V and rock steady, as expected for an open (non-conducting) probe
+  gap. `filter.cpp`'s median+EMA output equals the raw value here since the signal isn't
+  noisy enough to exercise the smoothing yet.
+- Still open: a reference-solution (or tap-water) reading, to see the module respond to an
+  actual conductive path; and a direct ADC-resolution sanity check (e.g. A0 jumpered to 5V)
+  — `ADC_RESOLUTION_BITS=14` is requested but not yet independently confirmed against this
+  board's real behavior.
