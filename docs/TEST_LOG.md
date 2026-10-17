@@ -41,3 +41,22 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
   actual conductive path; and a direct ADC-resolution sanity check (e.g. A0 jumpered to 5V)
   — `ADC_RESOLUTION_BITS=14` is requested but not yet independently confirmed against this
   board's real behavior.
+
+## 2026-10-17 — Chunk 2: plain tap water
+
+- Probe fully submerged in plain tap water (source/composition otherwise unknown — not a
+  calibration-grade reference, just a real conductive sample).
+- Reading, steady over 12+ consecutive seconds:
+  ```
+  {"ms":681000,"raw":331,"v":0.101,"v_filtered":0.101}
+  ```
+  (climbed smoothly from raw=329/v=0.100 to raw=331/v=0.101 over the window — consistent
+  with settling, not noise.)
+- Clear separation from the dry-air baseline (raw=21, v=0.006V): the module visibly responds
+  to a real conductive path. `sensor.cpp` + `filter.cpp` are now confirmed working on
+  hardware across two distinct conditions.
+- **Not a calibration point** — tap water's actual TDS/conductivity is unknown, so this
+  can't feed `conductivity.cpp`'s curve constants (Chunk 3) or `calibration.cpp`'s fit
+  (Chunk 4). Those need a real reference standard (e.g. a 1413 uS/cm solution) — not yet on
+  hand.
+- Still open: the A0-jumpered-to-5V ADC-resolution sanity check.

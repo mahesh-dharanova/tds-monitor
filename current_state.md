@@ -17,18 +17,19 @@ This is a pointer into git history for the next agent, not a duplicate of it.
 ## In progress
 
 - Chunk 2 (sensor + filter): fully wired (VCC/GND/AOUT). `sensor.cpp` and `filter.cpp` are
-  real and now hardware-verified — first live reading captured: dry-air baseline
-  `raw=21, v=0.006V`, steady across 6+ seconds. `filter.cpp` also host-tested
-  (`tests/run_tests.sh` 6/6). See `docs/TEST_LOG.md` for the full dated entries.
+  real and hardware-verified across two conditions: dry-air baseline (`raw=21, v=0.006V`)
+  and plain tap water (`raw≈330, v≈0.101V`) — clear, steady separation between the two.
+  `filter.cpp` also host-tested (`tests/run_tests.sh` 6/6). Tap water is not a calibration
+  reference (unknown TDS), so this doesn't feed `conductivity.cpp`/`calibration.cpp` yet.
+  See `docs/TEST_LOG.md` for the full dated entries.
 
 ## Next
 
-- Dip the probe in tap water (or a known reference solution, if available) and capture that
-  reading too — the dry-air baseline alone doesn't show the module responding to a
-  conductive path. Also do a direct ADC-resolution sanity check (A0 jumpered to 5V) since
-  `ADC_RESOLUTION_BITS=14` is requested but not independently confirmed yet. Once both are
-  logged, Chunk 2 is complete and `conductivity.cpp` (Chunk 3) can get real curve constants
-  instead of the current placeholder.
+- A direct ADC-resolution sanity check (A0 jumpered to 5V) — `ADC_RESOLUTION_BITS=14` is
+  requested but not independently confirmed yet. Once logged, Chunk 2 is complete.
+- A real conductivity reference standard (e.g. 1413 uS/cm solution) is needed before
+  `conductivity.cpp` (Chunk 3) can get real curve constants or `calibration.cpp` (Chunk 4)
+  can do a real fit — not yet on hand.
 
 ## Open questions / blockers
 
