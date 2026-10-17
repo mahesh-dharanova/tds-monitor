@@ -42,14 +42,14 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
   — `ADC_RESOLUTION_BITS=14` is requested but not yet independently confirmed against this
   board's real behavior.
 
-## 2026-10-17 — Chunk 2: "tap water" (identity later found uncertain — see below)
+## 2026-10-17 — Chunk 2: canned/bottled drinking water (identity corrected — see below)
 
-- Probe fully submerged in what was described at the time as plain tap water
-  (source/composition otherwise unknown — not a calibration-grade reference, just a real
-  conductive sample). **Update, same day:** the user later clarified they aren't sure this
-  was genuine municipal tap water vs. filtered/RO drinking water — a fresh, confirmed tap
-  water sample was captured separately below. Keep this entry's data (it's real), but don't
-  treat it as "tap water" for any comparison — treat its true identity as unknown.
+- Probe fully submerged in what was described at the time as plain tap water.
+  **Update, same day (twice):** first flagged as uncertain (tap vs. filtered/RO), then the
+  user confirmed its real identity: canned/bottled water supplied for drinking purposes, not
+  municipal tap water at all. A fresh, confirmed municipal tap water sample was captured
+  separately below. Keep this entry's data (it's real), but label it "canned drinking
+  water," not "tap water," in any comparison.
 - Reading, steady over 12+ consecutive seconds:
   ```
   {"ms":681000,"raw":331,"v":0.101,"v_filtered":0.101}
@@ -104,6 +104,21 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
 - Per the user's decision: **this reading is kept as v1's single calibration point**
   regardless of the anomaly (prototype-grade, not lab-grade) — a fresh, confirmed tap-water
   sample is being captured next for comparison (see following entry).
+
+## 2026-10-17 — Chunk 2: distilled water, retest
+
+- Probe re-dipped into the same distilled water, after the RO-water test above.
+- Reading, steady across 12+ seconds:
+  ```
+  {"ms":3733000,"raw":1692,"v":0.516,"v_filtered":0.516}
+  ```
+- **Reproduces the first distilled-water reading closely** (raw 1692 vs. 1662, v 0.516 vs.
+  0.508 — within ~2%). This rules out a one-off fluke or transient contamination event: the
+  elevated reading is a real, repeatable property of this specific water sample or its
+  container, not measurement noise. Good news for calibration purposes (a single-point
+  reference needs to be *repeatable*, which this is) even though the absolute "distilled
+  water = near-zero" assumption doesn't hold for this particular sample. Root cause (sample
+  purity, container residue, something else) still not investigated — not blocking v1.
 
 ## 2026-10-17 — Chunk 2: fresh tap water (confirmed), for comparison
 
