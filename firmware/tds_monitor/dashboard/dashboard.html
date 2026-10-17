@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-zone="idle">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water TDS monitor</title>
+<style>
+:root{
+  --sans: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --radius: 14px;
+  --btn: #17776f;
+}
+[data-theme="dark"]{
+  --bg:#0c1f2e; --surface:#12293b; --surface2:#19354a; --text:#e9f1f4; --muted:#92a9b3;
+  --line:rgba(233,241,244,.14); --focus:#9fd6f5;
+  --z0:#6ec6f2; --z1:#5fd3a0; --z2:#d5c67a; --z3:#e08a3c; --z4:#d0533d;
+}
+[data-theme="light"]{
+  --bg:#e8f0f3; --surface:#ffffff; --surface2:#f0f6f8; --text:#0e2a38; --muted:#4b6773;
+  --line:rgba(14,42,56,.16); --focus:#0f6f68;
+  --z0:#1d7fb5; --z1:#11805c; --z2:#7d7416; --z3:#a85a10; --z4:#a8372a;
+}
+[data-zone="idle"]{--accent:var(--muted)}
+[data-zone="z0"]{--accent:var(--z0)}
+[data-zone="z1"]{--accent:var(--z1)}
+[data-zone="z2"]{--accent:var(--z2)}
+[data-zone="z3"]{--accent:var(--z3)}
+[data-zone="z4"]{--accent:var(--z4)}
+
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.app{max-width:1180px;margin:0 auto;padding:20px 24px 56px}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:6px 0 22px}
+.top h1{margin:0;font-size:20px;font-weight:600}
+.top p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--muted)}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill.live::before{background:var(--z1)}
+.pill.demo::before{background:var(--z3)}
+.pill.bad::before{background:var(--z4)}
+.btn{padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:14px}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--btn);border-color:var(--btn);color:#fff}
+.btn.primary:hover{background:#1c8a81}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.notice{display:none;margin:0 0 18px;padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:14px}
+.notice.on{display:block}
+.notice.alert{border-color:var(--z4);background:color-mix(in srgb,var(--z4) 16%,var(--surface))}
+
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px;align-items:center}
+.vessel{margin:0;background:#0a1a25;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.vessel svg{display:block;width:100%;height:auto}
+.vessel svg.idle{opacity:.55}
+.vessel figcaption{padding:8px 16px 12px;font-size:13px;color:#93aab1}
+.vt{font-family:var(--sans);font-size:13px;fill:#93aab1}
+.vt.strong{fill:#e9f1f4;font-weight:600}
+.flow{stroke-dasharray:6 8}
+@media (prefers-reduced-motion:no-preference){.flow{animation:flow 1.1s linear infinite}}
+@keyframes flow{to{stroke-dashoffset:-14}}
+
+.status{margin:0;font-size:clamp(24px,3.2vw,34px);font-weight:600;color:var(--accent);transition:color .6s}
+.num{margin:2px 0 0;font-size:clamp(84px,11vw,132px);font-weight:200;line-height:1.02;letter-spacing:-2px;font-variant-numeric:tabular-nums}
+.num small{font-size:.26em;font-weight:300;letter-spacing:0;margin-left:8px;color:var(--muted)}
+.meta{margin:6px 0 0;color:var(--muted);font-size:15px}
+.meta b{color:var(--text);font-weight:600}
+.scale{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:22px}
+.scale i{display:block;height:8px;border-radius:4px}
+.scale i:nth-child(1){background:var(--z0)}
+.scale i:nth-child(2){background:var(--z1)}
+.scale i:nth-child(3){background:var(--z2)}
+.scale i:nth-child(4){background:var(--z3)}
+.scale i:nth-child(5){background:var(--z4)}
+.mark{position:absolute;top:-6px;left:0;width:3px;height:20px;border-radius:2px;background:var(--text);transform:translateX(-1.5px);transition:left .9s cubic-bezier(.3,.7,.2,1);opacity:0}
+.mark.on{opacity:1}
+.scale-labels{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px;font-size:12px;color:var(--muted);text-align:center}
+.trendline{margin:14px 0 0;font-size:14px;color:var(--muted)}
+
+.trend{margin-top:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 10px}
+.trend-head{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.trend-head h2{margin:0;font-size:15px;font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--muted);padding:6px 12px;font-size:13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--text)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px}
+#chart{display:block;width:100%;height:290px;touch-action:pan-y}
+
+.lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:32px;border-top:1px solid var(--line)}
+.col{padding:22px 24px 0 0;min-width:0}
+.col+.col{padding-left:24px;border-left:1px solid var(--line)}
+.col h2{margin:0 0 12px;font-size:15px;font-weight:600}
+.col ul{list-style:none;margin:0;padding:0}
+.col li{font-size:14px;padding:7px 0;border-bottom:1px solid var(--line)}
+.col li:last-child{border-bottom:0}
+.checks li{display:grid;grid-template-columns:12px 1fr;gap:10px;align-items:start}
+.checks li::before{content:"";width:8px;height:8px;margin-top:8px;border-radius:50%;background:var(--z1)}
+.checks li.warn::before{background:var(--z3)}
+.checks li.bad::before{background:var(--z4)}
+.events time{display:inline-block;min-width:68px;color:var(--muted);font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:14px}
+.field{margin:0 0 18px}
+.field label,.field .lab{display:block;font-size:14px;margin-bottom:6px}
+.field p{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input[type=number],input[type=text],select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+input[type=number]{width:110px}
+input[type=range]{width:100%;accent-color:var(--btn)}
+details{margin:0 0 18px}
+summary{cursor:pointer;font-size:14px;padding:2px 0}
+.pts li{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.foot{margin-top:36px;font-size:13px;color:var(--muted)}
+
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:20px 22px;width:min(92vw,380px)}
+dialog::backdrop{background:rgba(5,15,22,.6)}
+dialog h2{margin:0 0 6px;font-size:16px}
+dialog p{margin:0 0 12px;font-size:14px;color:var(--muted)}
+dialog input[type=text]{width:100%}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:90vw;z-index:5}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;gap:22px}
+  .lower{grid-template-columns:1fr}
+  .col,.col+.col{padding:20px 0 0;border-left:0}
+  .col+.col{border-top:1px solid var(--line);margin-top:20px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>Water TDS monitor</h1>
+      <p>Live dissolved solids from your TDS sensor</p>
+    </div>
+    <div class="actions">
+      <span id="pill" class="pill" role="status">Not connected</span>
+      <button id="btnConnect" class="btn primary">Connect USB</button>
+      <button id="btnWifi" class="btn">Connect WiFi</button>
+      <button id="btnDemo" class="btn">Try demo</button>
+      <button id="btnTheme" class="btn" aria-label="Switch between dark and light theme">Light theme</button>
+    </div>
+  </header>
+
+  <div id="support" class="notice"></div>
+  <div id="alertBar" class="notice alert" role="alert"></div>
+
+  <main>
+    <section class="hero" aria-label="Current reading">
+      <figure class="vessel">
+        <svg id="vessel" class="idle" viewBox="0 0 640 340" role="img" aria-label="Two probe needles in water. Dissolved ions move between them. More ions mean a higher TDS reading.">
+          <path class="flow" d="M24 132 H112" fill="none" stroke="#6ec6f2" stroke-width="3" stroke-linecap="round"/>
+          <path class="flow" d="M528 296 H616" fill="none" stroke="#6ec6f2" stroke-width="3" stroke-linecap="round"/>
+          <text class="vt" x="24" y="118">water in</text>
+          <text class="vt" x="616" y="318" text-anchor="end">water out</text>
+          <rect x="114" y="104" width="412" height="208" rx="3" fill="rgb(22,92,132)" fill-opacity=".8"/>
+          <line x1="114" y1="104" x2="526" y2="104" stroke="#6ec6f2" stroke-width="2" stroke-opacity=".7"/>
+          <g id="field"></g>
+          <g id="ions"></g>
+          <rect x="112" y="96" width="416" height="224" rx="12" fill="none" stroke="#3f6074" stroke-width="2"/>
+          <rect x="287" y="98" width="6" height="170" rx="3" fill="#cfd8dc"/>
+          <rect x="347" y="98" width="6" height="170" rx="3" fill="#cfd8dc"/>
+          <rect x="268" y="40" width="104" height="58" rx="8" fill="#1b2c38" stroke="#5f7f92" stroke-width="1.5"/>
+          <text class="vt strong" x="320" y="64" text-anchor="middle">TDS probe</text>
+          <text id="mvText" class="vt" x="320" y="84" text-anchor="middle">no data</text>
+          <g id="tprobe" opacity=".25">
+            <rect x="440" y="60" width="8" height="140" rx="3" fill="#8ea3ad"/>
+            <circle cx="444" cy="204" r="7" fill="#8ea3ad"/>
+            <text class="vt" x="444" y="50" text-anchor="middle">temp probe</text>
+            <text id="tText" class="vt strong" x="444" y="228" text-anchor="middle">no probe</text>
+          </g>
+        </svg>
+        <figcaption>Dissolved ions carry current between the two needles. More ions give more current. The field reverses many times a second; here it is slowed down.</figcaption>
+      </figure>
+
+      <div class="reading">
+        <p id="status" class="status" aria-live="polite">No reading yet</p>
+        <p id="num" class="num">–</p>
+        <p id="meta" class="meta">Connect the board, or try the demo.</p>
+        <div class="scale" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><span id="mark" class="mark"></span></div>
+        <div class="scale-labels" aria-hidden="true"><span>Very low</span><span>Good</span><span>Acceptable</span><span>High</span><span>Over range</span></div>
+        <p id="trendline" class="trendline"></p>
+      </div>
+    </section>
+
+    <section class="trend" aria-label="History">
+      <div class="trend-head">
+        <h2>History</h2>
+        <div class="ctrls">
+          <div class="seg" id="segRange" role="group" aria-label="Time range">
+            <button data-v="5m" aria-pressed="true">5 min</button>
+            <button data-v="1h" aria-pressed="false">1 hour</button>
+            <button data-v="24h" aria-pressed="false">24 hours</button>
+          </div>
+          <div class="seg" id="segMetric" role="group" aria-label="Chart value">
+            <button data-v="tds" aria-pressed="true">TDS</button>
+            <button data-v="temp" aria-pressed="false">Temperature</button>
+          </div>
+        </div>
+      </div>
+      <canvas id="chart" role="img" aria-label="Chart of TDS over time"></canvas>
+    </section>
+
+    <section class="lower">
+      <div class="col">
+        <h2>Checks</h2>
+        <ul id="checks" class="checks"></ul>
+      </div>
+      <div class="col">
+        <h2>Events</h2>
+        <ul id="events" class="events"></ul>
+      </div>
+      <div class="col">
+        <h2>Setup</h2>
+        <div class="field">
+          <span class="lab">Calibration</span>
+          <div class="row">
+            <input id="calVal" type="number" min="1" step="any" placeholder="Standard" aria-label="Value of the standard solution">
+            <select id="calUnit" aria-label="Unit of the standard solution"><option value="us">µS/cm</option><option value="ppm">ppm</option></select>
+            <button id="btnCal" class="btn small">Calibrate</button>
+          </div>
+          <p id="calInfo">Using the factory curve.</p>
+          <ul id="pts" class="pts" style="margin-top:8px"></ul>
+        </div>
+        <div class="field">
+          <label for="alertAt">Alert when TDS is above <b id="alertVal">500 ppm</b></label>
+          <input id="alertAt" type="range" min="50" max="1000" step="10" value="500">
+          <div class="row" style="margin-top:8px"><label style="display:flex;gap:8px;align-items:center;margin:0"><input id="beep" type="checkbox"> Play a sound</label></div>
+        </div>
+        <details>
+          <summary>More settings</summary>
+          <div class="field" style="margin-top:10px">
+            <label for="factor">TDS factor</label>
+            <select id="factor"><option value="50">0.50 (common default)</option><option value="64">0.64</option><option value="70">0.70 (natural water)</option></select>
+            <p>TDS = conductivity × factor. Meters that use another factor show other numbers for the same water.</p>
+          </div>
+          <div class="field">
+            <label for="manT">Water temperature if there is no probe</label>
+            <div class="row"><input id="manT" type="number" min="0" max="80" step="0.5" value="25"> <span>°C</span></div>
+          </div>
+        </details>
+        <div class="row">
+          <button id="btnCsv" class="btn small">Download CSV</button>
+          <button id="btnClear" class="btn small">Clear history</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <p id="foot" class="foot"></p>
+</div>
+
+<dialog id="wifiDlg">
+  <form method="dialog" id="wifiForm">
+    <h2>Connect over WiFi</h2>
+    <p>Type the address your board printed in the Serial Monitor, for example 192.168.1.50.</p>
+    <input id="wifiAddr" type="text" inputmode="url" placeholder="192.168.1.50" autocomplete="off" aria-label="Board address">
+    <div class="row" style="margin-top:14px;justify-content:flex-end">
+      <button type="button" id="wifiCancel" class="btn small">Cancel</button>
+      <button type="submit" id="wifiGo" class="btn small primary">Connect</button>
+    </div>
+  </form>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+const stdev = a => { const m = mean(a); return Math.sqrt(mean(a.map(x => (x - m) ** 2))); };
+const pad = n => String(n).padStart(2, '0');
+const hms = t => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
+const hm = t => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const KEY = 'tds1.';
+const load = (k, d) => { try { const v = localStorage.getItem(KEY + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) {} };
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NO_TDS = 65535, NO_TEMP = -999;
+
+const ZONES = [
+  { id: 'z0', name: 'Very low', lo: 0, hi: 50 },
+  { id: 'z1', name: 'Good', lo: 50, hi: 200 },
+  { id: 'z2', name: 'Acceptable', lo: 200, hi: 500 },
+  { id: 'z3', name: 'High', lo: 500, hi: 1000 },
+  { id: 'z4', name: 'Over range', lo: 1000, hi: 1e9 }
+];
+const zoneOf = v => ZONES.find(z => v < z.hi) || ZONES[4];
+const zoneNote = id => ({
+  z0: 'Very low mineral content.',
+  z1: 'Within the BIS acceptable limit of 500 ppm.',
+  z2: 'Within the BIS acceptable limit of 500 ppm.',
+  z3: 'Above the BIS acceptable limit of 500 ppm.',
+  z4: 'Above what this sensor can read (about 1000 ppm).'
+})[id];
+
+/* ---------- stores ---------- */
+function mkStore() {
+  return { live: [], hist: [], cur: null, events: [], last: null, rx: 0,
+    cfg: { factor: 50, alert: 500, mant: 250, tp: 0, calAt: 0, cal: [] },
+    zone: null, zoneCand: null, zoneCount: 0, alertOn: false, aHi: 0, aLo: 0 };
+}
+const REAL = mkStore();
+let ST = REAL, DEMO = null, SRC = 'none';
+const linked = () => SRC === 'serial' || SRC === 'wifi';
+const settings = { range: '5m', metric: 'tds', beep: load('beep', false) };
+
+/* ---------- samples, events, alerts ---------- */
+function addEvent(st, text, kind) {
+  st.events.unshift({ t: Date.now(), text, kind: kind || '' });
+  if (st.events.length > 50) st.events.pop();
+}
+function pushSample(st, s) {
+  st.last = s; st.rx = performance.now();
+  st.live.push(s); if (st.live.length > 3600) st.live.shift();
+  const m = Math.floor(s.t / 60000) * 60000;
+  if (!st.cur || st.cur.t !== m) {
+    if (st.cur && st.cur.n) {
+      st.hist.push({ t: st.cur.t, tds: st.cur.s / st.cur.n, temp: st.cur.tn ? st.cur.ts / st.cur.tn : null });
+      const cut = s.t - 86400e3; while (st.hist.length && st.hist[0].t < cut) st.hist.shift();
+    }
+    st.cur = { t: m, s: 0, n: 0, ts: 0, tn: 0 };
+  }
+  st.cur.s += s.tds; st.cur.n++;
+  if (s.tp) { st.cur.ts += s.temp; st.cur.tn++; }
+}
+const insideZone = (z, v) => v >= z.lo * 0.96 && v < z.hi * 1.04;
+function evaluate(st) {
+  const s = st.last; if (!s) return;
+  const z = zoneOf(s.tds);
+  if (!st.zone) { st.zone = z.id; st.zoneCand = z.id; st.zoneCount = 0; }
+  else {
+    const cur = ZONES.find(q => q.id === st.zone);
+    if (insideZone(cur, s.tds)) { st.zoneCand = st.zone; st.zoneCount = 0; }
+    else {
+      if (st.zoneCand === z.id) st.zoneCount++; else { st.zoneCand = z.id; st.zoneCount = 1; }
+      if (st.zoneCount >= 3) { st.zone = z.id; st.zoneCount = 0; addEvent(st, 'Now ' + z.name.toLowerCase() + ' (' + Math.round(s.tds) + ' ppm)'); }
+    }
+  }
+  const hi = st.cfg.alert;
+  if (!st.alertOn) {
+    if (s.tds >= hi) { if (++st.aHi >= 10) { st.alertOn = true; st.aHi = 0; addEvent(st, 'Alert: TDS above ' + hi + ' ppm', 'alert'); } } else st.aHi = 0;
+  } else {
+    if (s.tds <= hi * 0.95) { if (++st.aLo >= 10) { st.alertOn = false; st.aLo = 0; addEvent(st, 'Alert cleared: back below ' + hi + ' ppm'); } } else st.aLo = 0;
+  }
+}
+function onSample(st, s) {
+  pushSample(st, s);
+  if (st === ST) { evaluate(st); render(); }
+}
+
+/* ---------- transport: the same requests work over USB and WiFi ---------- */
+let port = null, reader = null, keepReading = false;
+const serialOK = 'serial' in navigator;
+const pending = [];
+const servedByBoard = location.protocol === 'http:' || location.protocol === 'https:';
+let wifiBase = servedByBoard ? '' : load('boardUrl', '');
+let pollTimer = null, lastMs = -1;
+
+async function api(path) {
+  const r = await fetch(wifiBase + path, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function serialWrite(text) {
+  const w = port.writable.getWriter();
+  try { await w.write(new TextEncoder().encode(text)); } finally { w.releaseLock(); }
+}
+function serialRequest(path) {
+  return new Promise((res, rej) => {
+    const item = { path: path.split('?')[0], res, rej };
+    item.timer = setTimeout(() => { const i = pending.indexOf(item); if (i >= 0) pending.splice(i, 1); rej(new Error('timeout')); }, 6000);
+    pending.push(item);
+    serialWrite(path + '\n').catch(e => { clearTimeout(item.timer); const i = pending.indexOf(item); if (i >= 0) pending.splice(i, 1); rej(e); });
+  });
+}
+function request(path) {
+  if (SRC === 'wifi') return api(path);
+  if (SRC === 'serial') return serialRequest(path);
+  return Promise.reject(new Error('offline'));
+}
+const sampleFrom = o => ({ t: Date.now(), tds: o.tds, ec: o.ec, mv: o.mv, temp: o.t, tp: o.tp ? 1 : 0 });
+function handleLine(line) {
+  if (line[0] !== '{') return;
+  let o; try { o = JSON.parse(line); } catch (e) { return; }
+  if (o.r) {
+    const i = pending.findIndex(p => p.path === o.r);
+    if (i >= 0) { const p = pending.splice(i, 1)[0]; clearTimeout(p.timer); p.res(o.d); }
+  } else if (typeof o.tds === 'number') onSample(REAL, sampleFrom(o));
+}
+
+/* ---------- loading the board's saved state ---------- */
+function replayEvents(st) {
+  st.events = []; let zone = null, alert = false;
+  const hi = st.cfg.alert;
+  for (const b of st.hist) {
+    const z = zoneOf(b.tds);
+    if (!zone) zone = z.id;
+    else if (!insideZone(ZONES.find(q => q.id === zone), b.tds)) { zone = z.id; st.events.unshift({ t: b.t, text: 'Now ' + z.name.toLowerCase() + ' (' + Math.round(b.tds) + ' ppm)', kind: '' }); }
+    if (!alert && b.tds >= hi) { alert = true; st.events.unshift({ t: b.t, text: 'Alert: TDS above ' + hi + ' ppm', kind: 'alert' }); }
+    else if (alert && b.tds <= hi * 0.95) { alert = false; st.events.unshift({ t: b.t, text: 'Alert cleared: back below ' + hi + ' ppm', kind: '' }); }
+  }
+  st.events = st.events.slice(0, 50); st.zone = zone; st.alertOn = alert;
+}
+function applyCfg(set) {
+  REAL.cfg = { factor: set.factor, alert: set.alert, mant: set.mant, tp: set.tp ? 1 : 0, calAt: set.calAt || 0, cal: set.cal || [] };
+}
+function applyBoard(set, hist, rec) {
+  const now = Date.now();
+  Object.assign(REAL, { live: [], hist: [], cur: null, events: [], last: null, zone: null, zoneCand: null, zoneCount: 0, alertOn: false, aHi: 0, aLo: 0 });
+  applyCfg(set);
+  hist.tds.forEach((v, i) => {
+    if (v === NO_TDS) return;
+    const tt = hist.t[i];
+    REAL.hist.push({ t: now - (hist.up - (hist.t0 + (hist.first + i) * 60000)), tds: v, temp: tt === NO_TEMP ? null : tt / 10 });
+  });
+  const n = rec.tds.length;
+  for (let i = 0; i < n; i++) REAL.live.push({ t: now - (n - 1 - i) * 1000, tds: rec.tds[i], ec: rec.tds[i] / (set.factor / 100), mv: 0, temp: rec.t[i] / 10, tp: set.tp ? 1 : 0 });
+  if (n) { REAL.last = REAL.live[n - 1]; REAL.rx = performance.now(); }
+  replayEvents(REAL);
+}
+async function loadBoard() {
+  const [set, hist, rec] = [await request('/settings'), await request('/history'), await request('/recent')];
+  applyBoard(set, hist, rec);
+  syncSettingsUi();
+}
+async function refreshCfg() { applyCfg(await request('/settings')); syncSettingsUi(); render(); }
+
+/* ---------- connect ---------- */
+async function openPort(p, quiet) {
+  try { await p.open({ baudRate: 115200 }); }
+  catch (e) { if (!quiet) toast('Could not open the port. Close the Arduino Serial Monitor and try again.'); return; }
+  port = p; keepReading = true; SRC = 'serial'; REAL.rx = 0; render();
+  const dec = new TextDecoder(); let buf = '';
+  const loop = (async () => {
+    while (p.readable && keepReading) {
+      reader = p.readable.getReader();
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let i;
+          while ((i = buf.indexOf('\n')) >= 0) { handleLine(buf.slice(0, i).trim()); buf = buf.slice(i + 1); }
+          if (buf.length > 60000) buf = '';
+        }
+      } catch (e) { /* unplugged or closed */ }
+      finally { try { reader.releaseLock(); } catch (e) {} }
+      break;
+    }
+    try { await p.close(); } catch (e) {}
+    port = null; reader = null; pending.splice(0).forEach(q => { clearTimeout(q.timer); q.rej(new Error('closed')); });
+    if (SRC === 'serial') SRC = 'none';
+    render();
+  })();
+  try { await loadBoard(); } catch (e) { toast('Connected, but the board did not answer. Is the TDS sketch running?'); }
+  render();
+  return loop;
+}
+async function connectUsb() {
+  if (!serialOK) return;
+  if (SRC === 'serial') { keepReading = false; try { await reader.cancel(); } catch (e) {} return; }
+  if (SRC === 'wifi') return toast('Disconnect WiFi first.');
+  if (DEMO) stopDemo();
+  try { const p = await navigator.serial.requestPort(); await openPort(p, false); } catch (e) { /* dialog closed */ }
+}
+async function wifiConnect(base, quiet) {
+  if (SRC === 'serial') return toast('Disconnect USB first.');
+  if (DEMO) stopDemo();
+  const prev = wifiBase; wifiBase = base;
+  try {
+    SRC = 'wifi';
+    await loadBoard();
+    lastMs = -1; if (!servedByBoard) save('boardUrl', base);
+    render(); pollOnce();
+  } catch (e) {
+    SRC = 'none'; wifiBase = prev;
+    if (!quiet) toast('Could not reach the board' + (base ? ' at ' + base : '') + '. Check the address and that you are on the same WiFi.');
+  }
+}
+function wifiDisconnect() { clearTimeout(pollTimer); SRC = 'none'; render(); }
+async function pollOnce() {
+  if (SRC !== 'wifi') return;
+  try {
+    const d = await api('/data');
+    if (d.ms !== lastMs) { lastMs = d.ms; onSample(REAL, sampleFrom(d)); } else REAL.rx = performance.now();
+  } catch (e) { /* the Checks panel shows the gap */ }
+  if (SRC === 'wifi') pollTimer = setTimeout(pollOnce, 1000);
+}
+
+/* ---------- demo ---------- */
+let demoTimer = null, demoSec = 0;
+function demoTds(t) {
+  const p = ((t % 300) + 300) % 300;
+  if (p < 60) return 150 + 12 * Math.sin(p / 7);
+  if (p < 110) return 150 + (p - 60) / 50 * 480;
+  if (p < 170) return 630 + 25 * Math.sin((p - 110) / 6);
+  if (p < 230) return 630 - (p - 170) / 60 * 480;
+  return 150 + 12 * Math.sin(p / 7);
+}
+const ecToVolts = ec => { let lo = 0, hi = 2.6; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; (133.42 * m ** 3 - 255.86 * m ** 2 + 857.39 * m < ec) ? lo = m : hi = m; } return (lo + hi) / 2; };
+function demoSample(t, now) {
+  const tds = demoTds(t) + (Math.random() - .5) * 3, temp = 25.5 + 1.6 * Math.sin(t / 90);
+  const ec = tds / 0.5;
+  return { t: now, tds, ec, mv: Math.round(ecToVolts(ec * (1 + 0.02 * (temp - 25))) * 1000), temp, tp: 1 };
+}
+function startDemo() {
+  if (linked()) return toast('Disconnect the board first.');
+  DEMO = mkStore();
+  const now = Date.now();
+  for (let k = 1440; k > 5; k--) {
+    const t = now - k * 60000, v = clamp(170 + 120 * Math.max(0, Math.sin(t / 2.6e6)) + 160 * Math.max(0, Math.sin(t / 8e5)), 20, 900);
+    DEMO.hist.push({ t: Math.floor(t / 60000) * 60000, tds: v, temp: 25 + Math.sin(t / 3e6) * 2 });
+  }
+  demoSec = 1000;
+  for (let k = 300; k > 0; k--) pushSample(DEMO, demoSample(demoSec - k, now - k * 1000));
+  addEvent(DEMO, 'Demo started');
+  ST = DEMO; ST.zone = null;
+  demoTimer = setInterval(() => { demoSec++; onSample(DEMO, demoSample(demoSec, Date.now())); }, 1000);
+  syncSettingsUi(); evaluate(ST); render();
+}
+function stopDemo() { clearInterval(demoTimer); demoTimer = null; DEMO = null; ST = REAL; syncSettingsUi(); render(); }
+
+/* ---------- vessel: ions between the two needles ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+const IONS = [];
+(function build() {
+  let s = 11; const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  const g = $('#ions'), f = $('#field');
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElementNS(NS, 'circle'), pos = i % 2 === 0;
+    const p = { x0: 236 + rnd() * 168, y0: 116 + rnd() * 180, ph: rnd() * 6.28, sp: .6 + rnd() * .8, pos, el: c };
+    c.setAttribute('r', pos ? '3.6' : '3.2'); c.setAttribute('fill', pos ? '#6ec6f2' : '#f0b35a'); c.style.display = 'none';
+    g.appendChild(c); IONS.push(p);
+  }
+  for (let y = 140; y <= 260; y += 30) {
+    const l = document.createElementNS(NS, 'line');
+    l.setAttribute('x1', 296); l.setAttribute('x2', 344); l.setAttribute('y1', y); l.setAttribute('y2', y);
+    l.setAttribute('stroke', '#cfe8f5'); l.setAttribute('stroke-width', '1'); l.setAttribute('stroke-dasharray', '3 5'); l.setAttribute('stroke-opacity', '0.1');
+    f.appendChild(l);
+  }
+})();
+const viz = { tds: 0, tTds: 0, active: false };
+function updateVessel(t) {
+  const n = viz.active ? Math.round(clamp(viz.tds / 1000, 0, 1.2) * 88) + (viz.tds > 0 ? 2 : 0) : 0;
+  for (let i = 0; i < IONS.length; i++) {
+    const p = IONS[i];
+    if (i < n) {
+      const a = Math.sin(t * 2 * Math.PI / 3.2 + p.ph * 0.15) * 15 * (p.pos ? 1 : -1);
+      p.el.setAttribute('cx', (p.x0 + a).toFixed(1));
+      p.el.setAttribute('cy', (p.y0 + Math.sin(t * .5 * p.sp + p.ph) * 5).toFixed(1));
+      p.el.style.display = '';
+    } else p.el.style.display = 'none';
+  }
+  const o = (0.1 + 0.5 * clamp(viz.tds / 1000, 0, 1)).toFixed(2);
+  $('#field').querySelectorAll('line').forEach(l => l.setAttribute('stroke-opacity', viz.active ? o : '0.1'));
+}
+function vizFrame(ts) { viz.tds += (viz.tTds - viz.tds) * 0.05; updateVessel(ts / 1000); requestAnimationFrame(vizFrame); }
+if (!reduceMotion) requestAnimationFrame(vizFrame);
+
+/* ---------- rendering ---------- */
+function trendText(st) {
+  const now = Date.now();
+  const win = (a, b) => { const x = st.live.filter(p => p.t >= now - a && p.t <= now - b).map(p => p.tds); return x.length >= 20 ? mean(x) : null; };
+  const span = st.live.length ? now - st.live[0].t : 0;
+  if (span < 120e3) return 'Collecting data to show the trend.';
+  const late = win(60e3, 0), early = span >= 300e3 ? win(300e3, 240e3) : win(span, span - 60e3);
+  if (late == null || early == null) return 'Collecting data to show the trend.';
+  const mins = Math.max(2, Math.round(Math.min(span, 300e3) / 60e3)), d = late - early;
+  const lim = Math.max(8, early * 0.05);
+  if (Math.abs(d) < lim) return 'Steady over the last ' + mins + ' min.';
+  return (d > 0 ? 'Rising' : 'Falling') + ' over the last ' + mins + ' min.';
+}
+function diagnostics(st) {
+  const out = [], s = st.last, now = performance.now();
+  if (SRC === 'none' && !DEMO) out.push(['bad', 'Not connected. Connect over USB or WiFi.']);
+  else if (linked() && (!s || now - st.rx > 5000)) out.push(['bad', s ? 'No data for ' + Math.round((now - st.rx) / 1000) + ' s. ' + (SRC === 'wifi' ? 'Check that the board has power and is on the same WiFi.' : 'Check the USB cable and that the sketch is running.') : 'Connected. Waiting for the first reading.']);
+  if (s && s.mv > 0) {
+    if (s.mv < 8) out.push(['bad', 'The signal is near 0 V. The probe may be out of the water, or the wire is loose.']);
+    if (s.mv > 2300 || s.tds > 1000) out.push(['warn', 'The reading is above about 1000 ppm. This sensor cannot read higher.']);
+    const r = st.live.slice(-20).map(p => p.tds);
+    if (r.length >= 20 && stdev(r) / Math.max(mean(r), 30) > 0.05) out.push(['warn', 'The reading is unstable. Look for bubbles on the needles, or a loose wire.']);
+  }
+  if (s && !s.tp) out.push(['warn', 'No temperature probe found. The reading assumes ' + (st.cfg.mant / 10).toFixed(1) + ' °C, so it can be off by 2 % for each degree of difference.']);
+  if (!st.cfg.cal.length) out.push(['warn', 'Using the factory curve, which is accurate to about ±10 % of full scale. Calibrate with a standard solution.']);
+  else if (st.cfg.calAt) {
+    const days = (Date.now() - st.cfg.calAt * 1000) / 864e5;
+    if (days > 30) out.push(['warn', 'The calibration is ' + Math.floor(days) + ' days old. Check it with a standard solution.']);
+  }
+  if (!out.length) out.push(['ok', 'All checks pass.']);
+  return out;
+}
+let lastBeep = 0;
+function render() {
+  const st = ST, s = st.last, root = document.documentElement;
+  const pill = $('#pill'), fresh = s && performance.now() - st.rx < 5000;
+  let pt = 'Not connected', pc = 'pill';
+  if (DEMO) { pt = 'Demo data'; pc = 'pill demo'; }
+  else if (linked()) { pt = fresh ? 'Live' : 'Waiting for data'; pc = fresh ? 'pill live' : 'pill bad'; }
+  pill.textContent = pt; pill.className = pc;
+  $('#btnConnect').textContent = SRC === 'serial' ? 'Disconnect USB' : 'Connect USB';
+  $('#btnWifi').textContent = SRC === 'wifi' ? 'Disconnect WiFi' : 'Connect WiFi';
+  $('#btnDemo').textContent = DEMO ? 'Stop demo' : 'Try demo';
+  $('#foot').textContent = linked() ? 'The board keeps the last 24 hours of readings and your settings.' : (DEMO ? 'Demo data. Connect the board to see your own water.' : 'Connect the board over USB or WiFi. Open this page from the board address to use it from a phone.');
+
+  const vs = $('#vessel');
+  let status = 'No reading yet', num = '–', meta = 'Connect the board, or try the demo.', zone = 'idle';
+  viz.active = !!s;
+  if (s) {
+    const z = st.zone ? ZONES.find(q => q.id === st.zone) : zoneOf(s.tds);
+    status = z.name; zone = z.id; num = String(Math.round(s.tds));
+    meta = '<b>' + Math.round(s.ec) + '</b> µS/cm at 25 °C · <b>' + s.temp.toFixed(1) + ' °C</b> water' + (s.tp ? '' : ' (assumed)') + '<br>' + zoneNote(z.id);
+    viz.tTds = s.tds; vs.classList.remove('idle');
+    $('#mvText').textContent = s.mv ? s.mv + ' mV' : '';
+    $('#tprobe').setAttribute('opacity', s.tp ? '1' : '.25');
+    $('#tText').textContent = s.tp ? s.temp.toFixed(1) + ' °C' : 'no probe';
+  } else { vs.classList.add('idle'); viz.tTds = 0; $('#mvText').textContent = 'no data'; }
+  root.setAttribute('data-zone', zone);
+  $('#status').textContent = status;
+  $('#num').innerHTML = num + (s ? '<small>ppm</small>' : '');
+  $('#meta').innerHTML = meta;
+  const mark = $('#mark');
+  if (s) {
+    const z = zoneOf(s.tds), zi = ZONES.indexOf(z), hiB = Math.min(z.hi, z.lo + 500);
+    mark.style.left = ((zi + clamp((s.tds - z.lo) / (hiB - z.lo), 0, 1)) / 5 * 100) + '%'; mark.classList.add('on');
+  } else mark.classList.remove('on');
+  $('#trendline').textContent = s ? trendText(st) : '';
+  if (reduceMotion) { viz.tds = viz.tTds; updateVessel(0); }
+
+  const ab = $('#alertBar');
+  if (st.alertOn && s) {
+    ab.textContent = 'TDS is above your alert level of ' + st.cfg.alert + ' ppm. It is now ' + Math.round(s.tds) + ' ppm.';
+    ab.classList.add('on');
+    if (settings.beep && Date.now() - lastBeep > 30000) { lastBeep = Date.now(); beep(); }
+  } else ab.classList.remove('on');
+
+  $('#checks').innerHTML = diagnostics(st).map(c => '<li class="' + c[0] + '">' + c[1] + '</li>').join('');
+  $('#events').innerHTML = st.events.length ? st.events.slice(0, 8).map(e => '<li><time>' + hms(e.t) + '</time>' + e.text + '</li>').join('') : '<li class="empty">No events yet. Changes in TDS appear here.</li>';
+  const n = st.cfg.cal.length;
+  $('#calInfo').textContent = n ? 'Calibrated with ' + n + ' point' + (n > 1 ? 's' : '') + (st.cfg.calAt ? ', last ' + ago(st.cfg.calAt * 1000) : '') + '.' : 'Using the factory curve.';
+  $('#pts').innerHTML = n ? st.cfg.cal.map(p => '<li><span>' + p[1] + ' µS/cm <span class="empty">(read ' + p[0] + ')</span></span><button class="btn small" data-rm="' + p[1] + '">Remove</button></li>').join('') + '<li><button class="btn small" id="btnCalClear">Use the factory curve</button></li>' : '';
+  const hasT = st.live.some(p => p.tp);
+  $('#segMetric button[data-v="temp"]').disabled = !hasT;
+  if (!hasT && settings.metric === 'temp') setSeg('segMetric', 'tds');
+  drawChart();
+}
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60); if (h < 48) return h + ' h ago';
+  return Math.round(h / 24) + ' days ago';
+}
+function syncSettingsUi() {
+  const c = ST.cfg;
+  $('#alertAt').value = c.alert; $('#alertVal').textContent = c.alert + ' ppm';
+  $('#factor').value = String(c.factor); $('#manT').value = (c.mant / 10).toFixed(1);
+}
+
+/* ---------- chart ---------- */
+let hoverX = null;
+function setSeg(id, v) { $('#' + id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === v ? 'true' : 'false')); settings[id === 'segRange' ? 'range' : 'metric'] = v; }
+function drawChart() {
+  const cv = $('#chart'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const css = getComputedStyle(document.documentElement), C = n => css.getPropertyValue(n).trim();
+  const st = ST, now = Date.now(), metric = settings.metric;
+  const span = { '5m': 300e3, '1h': 3600e3, '24h': 86400e3 }[settings.range], t0 = now - span;
+  const val = p => metric === 'tds' ? p.tds : p.temp;
+  const pts = [];
+  if (settings.range === '5m') { for (const p of st.live) if (p.t >= t0 && (metric === 'tds' || p.tp)) pts.push({ t: p.t, y: val(p) }); }
+  else {
+    for (const b of st.hist) if (b.t + 60000 >= t0 && val(b) != null) pts.push({ t: b.t + 30000, y: val(b) });
+    if (st.cur && st.cur.n) { const y = metric === 'tds' ? st.cur.s / st.cur.n : (st.cur.tn ? st.cur.ts / st.cur.tn : null); if (y != null) pts.push({ t: now, y }); }
+  }
+  const P = { l: 66, r: 14, t: 10, b: 26 }, pw = w - P.l - P.r, ph = h - P.t - P.b;
+  let Y, ticks;
+  if (metric === 'tds') {
+    Y = v => P.t + ph - Math.sqrt(clamp(v, 0, 1000) / 1000) * ph; ticks = [0, 50, 200, 500, 1000];
+  } else {
+    let lo = 20, hi = 30; if (pts.length) { lo = Math.min(...pts.map(p => p.y)) - 1; hi = Math.max(...pts.map(p => p.y)) + 1; }
+    if (hi - lo < 4) { const m = (hi + lo) / 2; lo = m - 2; hi = m + 2; }
+    Y = v => P.t + ph - (v - lo) / (hi - lo) * ph; ticks = [0, 1, 2, 3, 4].map(i => lo + (hi - lo) * i / 4);
+  }
+  const X = t => P.l + (t - t0) / span * pw;
+  const muted = C('--muted'), line = C('--line');
+  g.font = '12px ' + C('--sans'); g.textBaseline = 'middle';
+  if (metric === 'tds') {
+    for (const z of ZONES.slice(0, 4)) { g.fillStyle = C('--' + z.id); g.globalAlpha = 0.09; g.fillRect(P.l, Y(z.hi), pw, Y(z.lo) - Y(z.hi)); g.globalAlpha = 1; }
+  }
+  g.fillStyle = muted; g.textAlign = 'right'; g.strokeStyle = line; g.lineWidth = 1;
+  for (const v of ticks) { g.fillText(metric === 'tds' ? v + ' ppm' : v.toFixed(1) + ' °C', P.l - 8, Y(v)); g.beginPath(); g.moveTo(P.l, Y(v)); g.lineTo(P.l + pw, Y(v)); g.stroke(); }
+  if (metric === 'tds') {
+    g.strokeStyle = C('--z3'); g.setLineDash([6, 5]); g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(P.l, Y(st.cfg.alert)); g.lineTo(P.l + pw, Y(st.cfg.alert)); g.stroke(); g.setLineDash([]);
+  }
+  g.fillStyle = muted; g.textAlign = 'center';
+  const nt = w < 520 ? 2 : 4;
+  for (let i = 0; i <= nt; i++) { const t = t0 + span * i / nt; g.fillText(hm(t), clamp(X(t), P.l + 14, w - P.r - 14), h - 9); }
+  if (!pts.length) { g.fillStyle = muted; g.textAlign = 'center'; g.fillText('Waiting for data', P.l + pw / 2, P.t + ph / 2); return; }
+  const accent = metric === 'tds' ? C('--accent') : C('--text');
+  g.save(); g.beginPath(); g.rect(P.l, P.t, pw, ph); g.clip();
+  g.lineJoin = 'round'; g.lineWidth = 2.5; g.strokeStyle = accent;
+  g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(X(p.t), Y(p.y)) : g.moveTo(X(p.t), Y(p.y))); g.stroke();
+  if (metric === 'tds' && pts.length > 1) { g.lineTo(X(pts[pts.length - 1].t), Y(0)); g.lineTo(X(pts[0].t), Y(0)); g.closePath(); g.fillStyle = accent; g.globalAlpha = .1; g.fill(); g.globalAlpha = 1; }
+  g.restore();
+  const lp = pts[pts.length - 1]; g.fillStyle = accent; g.beginPath(); g.arc(X(lp.t), Y(lp.y), 4.5, 0, 6.2832); g.fill();
+  if (hoverX != null && hoverX >= P.l && hoverX <= P.l + pw) {
+    let best = pts[0], bd = 1e9;
+    for (const p of pts) { const d = Math.abs(X(p.t) - hoverX); if (d < bd) { bd = d; best = p; } }
+    const bx = X(best.t), by = Y(best.y);
+    g.strokeStyle = muted; g.lineWidth = 1; g.beginPath(); g.moveTo(bx, P.t); g.lineTo(bx, P.t + ph); g.stroke();
+    g.fillStyle = C('--text'); g.beginPath(); g.arc(bx, by, 4, 0, 6.2832); g.fill();
+    const txt = hm(best.t) + '   ' + (metric === 'tds' ? Math.round(best.y) + ' ppm' : best.y.toFixed(1) + ' °C');
+    const tw = g.measureText(txt).width + 16, tx = clamp(bx - tw / 2, P.l, P.l + pw - tw), ty = by < P.t + 40 ? by + 14 : by - 34;
+    g.fillStyle = C('--surface2'); g.strokeStyle = line; g.beginPath(); g.roundRect(tx, ty, tw, 24, 6); g.fill(); g.stroke();
+    g.fillStyle = C('--text'); g.textAlign = 'left'; g.fillText(txt, tx + 8, ty + 12);
+  }
+}
+
+/* ---------- setup actions ---------- */
+let toastTimer = null;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 4600); }
+const needBoard = () => { if (linked()) return true; toast(DEMO ? 'This is demo data. Connect the board to change settings.' : 'Connect the board first.'); return false; };
+async function send(path, okMsg) {
+  try {
+    const r = await request(path);
+    if (r && r.ok === false) { toast(r.err || 'The board refused this change.'); return false; }
+    if (okMsg) toast(okMsg);
+    await refreshCfg();
+    return true;
+  } catch (e) { toast('The board did not answer. Check the connection.'); return false; }
+}
+$('#btnCal').onclick = async () => {
+  if (!needBoard()) return;
+  const v = parseFloat($('#calVal').value);
+  if (!(v > 0)) return toast('Type the value of the standard solution first.');
+  const ec = $('#calUnit').value === 'ppm' ? v / (ST.cfg.factor / 100) : v;
+  if (await send('/cal?ec=' + Math.round(ec) + '&at=' + Math.floor(Date.now() / 1000), 'Calibrated at ' + Math.round(ec) + ' µS/cm.')) $('#calVal').value = '';
+};
+$('#pts').addEventListener('click', e => {
+  if (e.target.id === 'btnCalClear') { if (needBoard() && confirm('Remove all calibration points and use the factory curve?')) send('/cal?clear=1'); return; }
+  const b = e.target.closest('[data-rm]'); if (b && needBoard()) send('/cal?rmec=' + b.dataset.rm);
+});
+const alertEl = $('#alertAt');
+alertEl.oninput = () => { $('#alertVal').textContent = alertEl.value + ' ppm'; };
+alertEl.onchange = () => {
+  if (DEMO) { ST.cfg.alert = +alertEl.value; ST.aHi = ST.aLo = 0; return render(); }
+  if (needBoard()) { ST.aHi = ST.aLo = 0; send('/set?alert=' + alertEl.value); } else syncSettingsUi();
+};
+$('#factor').onchange = () => {
+  if (DEMO) { ST.cfg.factor = +$('#factor').value; return render(); }
+  if (needBoard()) send('/set?factor=' + $('#factor').value); else syncSettingsUi();
+};
+$('#manT').onchange = () => { if (needBoard()) send('/set?mant=' + Math.round(parseFloat($('#manT').value) * 10)); else syncSettingsUi(); };
+$('#btnClear').onclick = async () => {
+  if (!needBoard()) return;
+  if (!confirm('Clear the saved history and events? Your calibration stays.')) return;
+  if (await send('/hist?clear=1')) { Object.assign(ST, { live: [], hist: [], cur: null, events: [] }); render(); }
+};
+$('#btnCsv').onclick = () => {
+  const all = ST.hist.slice(); if (ST.cur && ST.cur.n) all.push({ t: ST.cur.t, tds: ST.cur.s / ST.cur.n, temp: ST.cur.tn ? ST.cur.ts / ST.cur.tn : null });
+  if (!all.length) return toast('No history to download yet.');
+  const rows = ['time,tds_ppm,temperature_c'].concat(all.map(b => [new Date(b.t).toISOString(), b.tds.toFixed(0), b.temp == null ? '' : b.temp.toFixed(1)].join(',')));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));
+  a.download = 'water-tds-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+const beepEl = $('#beep'); beepEl.checked = !!settings.beep;
+beepEl.onchange = () => { settings.beep = beepEl.checked; save('beep', settings.beep); if (settings.beep) beep(); };
+let actx = null;
+function beep() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = 880; g.gain.value = 0.08; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.25);
+  } catch (e) {}
+}
+for (const id of ['segRange', 'segMetric']) {
+  $('#' + id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; setSeg(id, b.dataset.v); drawChart(); });
+}
+const cv = $('#chart');
+cv.addEventListener('pointermove', e => { hoverX = e.clientX - cv.getBoundingClientRect().left; drawChart(); });
+cv.addEventListener('pointerleave', () => { hoverX = null; drawChart(); });
+window.addEventListener('resize', drawChart);
+
+/* ---------- theme and start ---------- */
+function setTheme(t) { document.documentElement.setAttribute('data-theme', t); save('theme', t); $('#btnTheme').textContent = t === 'dark' ? 'Light theme' : 'Dark theme'; drawChart(); }
+setTheme(load('theme', window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+$('#btnTheme').onclick = () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+$('#btnConnect').onclick = connectUsb;
+$('#btnDemo').onclick = () => DEMO ? stopDemo() : startDemo();
+$('#btnWifi').onclick = () => {
+  if (SRC === 'wifi') return wifiDisconnect();
+  if (servedByBoard) return wifiConnect('', false);
+  $('#wifiAddr').value = wifiBase; $('#wifiDlg').showModal(); $('#wifiAddr').focus();
+};
+$('#wifiCancel').onclick = () => $('#wifiDlg').close();
+$('#wifiForm').addEventListener('submit', () => {
+  let a = $('#wifiAddr').value.trim().replace(/\/+$/, '');
+  if (!a) return;
+  if (!/^https?:\/\//.test(a)) a = 'http://' + a;
+  wifiConnect(a, false);
+});
+if (servedByBoard) {
+  $('#btnConnect').hidden = true; $('#btnWifi').classList.add('primary'); $('#btnConnect').classList.remove('primary');
+  wifiConnect('', true);
+} else if (!serialOK) {
+  const n = $('#support'); n.textContent = 'This browser cannot use USB. Open this file in Chrome or Edge on a computer, or connect over WiFi.'; n.classList.add('on');
+  $('#btnConnect').disabled = true;
+} else {
+  navigator.serial.getPorts().then(ps => { if (ps.length) openPort(ps[0], true); }).catch(() => {});
+  navigator.serial.addEventListener('disconnect', () => { keepReading = false; });
+}
+if (!servedByBoard && wifiBase) wifiConnect(wifiBase, true);
+setInterval(() => { if (linked()) render(); }, 2000);
+syncSettingsUi();
+render();
+window.__wm = { onSample, REAL, get ST() { return ST; } };
+})();
+</script>
+</body>
+</html>
