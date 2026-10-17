@@ -17,12 +17,12 @@ This is a pointer into git history for the next agent, not a duplicate of it.
 ## Done (cont.)
 
 - Chunk 2 (sensor + filter): complete. Fully wired (VCC/GND/AOUT), `sensor.cpp` and
-  `filter.cpp` real and hardware-verified across four conditions: dry air (`v=0.006V`), an
-  early ambiguous "tap water" sample later found to be of uncertain identity (`v=0.101V`),
-  distilled water — the confirmed v1 calibration point (`v=0.508V`), and fresh confirmed tap
-  water (`v=0.721V`). `filter.cpp` also host-tested (`tests/run_tests.sh` 6/6). Tap-vs-
-  distilled ordering is now physically sensible (tap > distilled); distilled water's
-  absolute value being far from near-zero remains an open question (see below). See
+  `filter.cpp` real and hardware-verified across five conditions, lowest to highest: dry air
+  (`v=0.006V`) < RO water (`v=0.079V`) < an early ambiguous "tap water" sample of uncertain
+  identity (`v=0.101V`) < distilled water, the confirmed v1 calibration point (`v=0.508V`) <
+  fresh confirmed tap water (`v=0.721V`). `filter.cpp` also host-tested
+  (`tests/run_tests.sh` 6/6). RO/tap/dry-air all nest in the physically expected order;
+  distilled water is the one value out of place (see open question below). See
   `docs/TEST_LOG.md` for full dated entries.
 
 ## Next
@@ -43,12 +43,13 @@ This is a pointer into git history for the next agent, not a duplicate of it.
 - v1 calibration is **single-point** (distilled water as a near-zero/offset reference),
   confirmed by the user — a second known-value standard (e.g. 1413 uS/cm) is deferred to v2
   alongside the DS18B20. See `architecture.md`'s key-decisions table.
-- **Distilled water's reading (v=0.508V) is far from near-zero**, higher than an earlier
-  ambiguous "tap water" sample (v=0.101V) and only modestly below fresh confirmed tap water
-  (v=0.721V). Tap-vs-distilled ordering is now physically sensible; the absolute distilled
-  value isn't. Not yet investigated (container contamination, probe condition, etc.) — kept
-  as the v1 calibration point anyway per the user's prototype-grade decision, but worth a
-  fresh distilled-water re-check before trusting it long-term.
+- **Distilled water's reading (v=0.508V) is out of place in the full dataset**, sitting
+  above RO water (0.079V) and the ambiguous early sample (0.101V) when purer water should
+  read lower, not higher. RO/tap/dry-air all nest correctly relative to each other, which
+  points at the distilled-water sample itself (or its handling) rather than the sensor/
+  filter pipeline. Not yet investigated (container contamination, probe condition, etc.) —
+  kept as the v1 calibration point anyway per the user's prototype-grade decision, but worth
+  a fresh distilled-water re-check before trusting it long-term.
 - No datasheet for the generic TDS module — the Claude-Chat draft's curve was for a
   different module (DFRobot SEN0244) it was never told about; `conductivity.cpp` still needs
   real curve constants derived from the dry-air/tap-water/distilled-water observations.

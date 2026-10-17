@@ -125,3 +125,20 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
   ambiguous sample. Worth another distilled-water reading with a fresh, independently
   verified sample before fully trusting it as the v1 calibration point, but not blocking
   further work per the user's prototype-grade decision.
+
+## 2026-10-17 — Chunk 2: RO water (user-described, not independently verified)
+
+- Probe moved into RO (reverse-osmosis-filtered) water, as described by the user.
+- Reading, steady across 12+ seconds:
+  ```
+  {"ms":3552000,"raw":260,"v":0.079,"v_filtered":0.079}
+  ```
+- **Reinforces the distilled-water anomaly rather than resolving it.** RO water (0.079V) is
+  *lower* than distilled water (0.508V) — but RO filtration typically removes somewhat
+  *less* dissolved solid than true distillation, so RO should read at or above distilled,
+  not 6x below it. All five readings now, lowest to highest: dry air (0.006V) < RO water
+  (0.079V) < ambiguous early "tap/filtered" sample (0.101V) < distilled water (0.508V) <
+  fresh confirmed tap water (0.721V). Distilled water is the one value breaking the expected
+  ordering (purer water should read lower, not mid-pack). Points at the distilled-water
+  sample or its handling as the thing to re-check, not the sensor/filter pipeline — RO, tap,
+  and dry-air all nest correctly relative to each other.
