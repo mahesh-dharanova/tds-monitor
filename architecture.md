@@ -49,10 +49,12 @@ sensor.cpp  --raw ADC, volts-->  filter.cpp  --smoothed volts-->  conductivity.c
   curve (module is generic/unbranded — curve constants are placeholders until Chunk 2
   observes real behavior), corrected to 25°C using a fixed assumed-temperature constant from
   `config.h` (v1 has no temp probe). Pure.
-- **`calibration`** — applies the user's 2-point calibration and the TDS factor to turn
-  conductivity into a ppm estimate. Every reading is tagged `"calibrated":false` until the
-  user has supplied real calibration points; rejects calibration points taken from an
-  unsteady reading or that don't fit the existing points. Pure.
+- **`calibration`** — applies the user's calibration point(s) and the TDS factor to turn
+  conductivity into a ppm estimate. **v1 is single-point**: distilled water sets a
+  near-zero/offset reference only (no slope correction) — see key-decisions table. Every
+  reading is tagged `"calibrated":false` until that point is supplied; rejects a point taken
+  from an unsteady reading. A second known-value standard (true 2-point fit) is v2 scope.
+  Pure.
 - **`health`** — plausibility checks on the (filtered) voltage: out-of-range, stuck value,
   still warming up, probe likely dry/disconnected. Independent of calibration state by
   design (house rule, see below).
@@ -74,6 +76,7 @@ sensor.cpp  --raw ADC, volts-->  filter.cpp  --smoothed volts-->  conductivity.c
 | `health` and `calibration` are separate modules/signals | House rule in `Embedded/CLAUDE.md`: never merge or infer one from the other | 2026-10-17 |
 | v1 ships explicit `calibrated:false` default instead of a guessed calibration | Module is generic/unbranded with no datasheet; a silently-wrong ppm number is worse than an honestly-flagged default one | 2026-10-17 |
 | No temperature probe in v1; fixed assumed-temperature constant in `config.h` | User's explicit instruction — DS18B20 deferred to v2 once v1 works; `conductivity`'s correction function takes a temperature value as a parameter so v2 only swaps the input source | 2026-10-17 |
+| v1 calibration is single-point (distilled water, near-zero/offset only), not a true 2-point fit | User's explicit choice for a prototype — distilled water isn't a traceable reference standard (see `docs/CALIBRATION_PROCEDURE.md`), but is enough to correct module-to-module offset; a real 2nd standard (e.g. 1413 uS/cm) and 2-point fit are v2 scope alongside the DS18B20 | 2026-10-17 |
 | WiFi credentials in gitignored `secrets.h`, not the `.ino` | The Claude-Chat-generated draft hardcoded credentials in a committed file — violates the no-secrets-in-code rule | 2026-10-17 |
 | Host-side unit tests via plain `g++`, no framework | `filter`/`conductivity`/`calibration`/`health`/`history`/`reporting` have zero Arduino dependency; g++ is already installed; avoids adding PlatformIO/Unity for no benefit | 2026-10-17 |
 | Board: Arduino Uno R4 WiFi, FQBN `arduino:renesas_uno:unor4wifi` | User's hardware, same as turbidity-monitor | 2026-10-17 |

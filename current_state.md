@@ -25,19 +25,25 @@ This is a pointer into git history for the next agent, not a duplicate of it.
 
 ## Next
 
-- A direct ADC-resolution sanity check (A0 jumpered to 5V) — `ADC_RESOLUTION_BITS=14` is
-  requested but not independently confirmed yet. Once logged, Chunk 2 is complete.
-- A real conductivity reference standard (e.g. 1413 uS/cm solution) is needed before
-  `conductivity.cpp` (Chunk 3) can get real curve constants or `calibration.cpp` (Chunk 4)
-  can do a real fit — not yet on hand.
+- Reconnect A0 to the TDS module's AOUT (currently jumpered to 5V for the ADC test below) to
+  resume normal sensor readings. Once confirmed, Chunk 2 is complete.
+- `conductivity.cpp` (Chunk 3) and `calibration.cpp` (Chunk 4) can proceed once the probe is
+  in distilled water for the single calibration point (see decision below) — no second
+  reference standard needed for v1.
 
 ## Open questions / blockers
 
+- **ADC-resolution sanity check is inconclusive, not failed.** A0 jumpered straight to 5V
+  read a steady ~0.96V (raw~3132-3146) instead of the expected ~5V, across two captures
+  including after reseating. Arduino's own docs confirm 14-bit/5V-reference is correct
+  defaults for this board, so the firmware math isn't in question — most likely a pin
+  mix-up on the jumper, not confirmed without a multimeter. See `docs/TEST_LOG.md`. Does not
+  block Chunk 2: the real dry-air/tap-water sensor readings are internally consistent.
+- v1 calibration is **single-point** (distilled water as a near-zero/offset reference),
+  confirmed by the user — a second known-value standard (e.g. 1413 uS/cm) is deferred to v2
+  alongside the DS18B20. See `architecture.md`'s key-decisions table.
 - No datasheet for the generic TDS module — the Claude-Chat draft's curve was for a
-  different module (DFRobot SEN0244) it was never told about; the pending AOUT hardware
-  session must observe the real module's voltage behavior before `conductivity.cpp` gets
-  real constants.
-- No conductivity calibration reference solutions yet — v1 stays in `calibrated:false` mode
-  until the user supplies real points.
+  different module (DFRobot SEN0244) it was never told about; `conductivity.cpp` still needs
+  real curve constants derived from the dry-air/tap-water/distilled-water observations.
 - WiFi credentials not yet provided — `secrets.h` doesn't exist until Chunk 10; only
   `secrets.h.example` is committed.

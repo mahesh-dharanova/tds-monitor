@@ -60,3 +60,22 @@ Dated hardware-in-loop verification entries. Never edit a past entry — append 
   (Chunk 4). Those need a real reference standard (e.g. a 1413 uS/cm solution) — not yet on
   hand.
 - Still open: the A0-jumpered-to-5V ADC-resolution sanity check.
+
+## 2026-10-17 — Chunk 2: ADC-resolution sanity check, inconclusive
+
+- A0 jumpered directly to 5V (TDS module's AOUT lead left floating in air, VCC/GND
+  unchanged). Confirmed via Arduino's own docs that the default analog reference on this
+  board is 5V and 14-bit mode is genuinely 0-16383 (`ADC_RESOLUTION_BITS=14` in `config.h`
+  is the right call per spec) — [Arduino UNO R4 WiFi ADC Resolution](https://docs.arduino.cc/tutorials/uno-r4-wifi/adc-resolution),
+  [Cheat Sheet](https://docs.arduino.cc/tutorials/uno-r4-wifi/cheat-sheet).
+- Expected: `raw` near 16383 (~5V). Got instead, rock steady across two separate captures
+  (including after reseating the jumper): `raw=3132-3146` (~0.956-0.960V).
+- A reading this steady argues against a loose/floating connection (those are typically
+  noisy) — more likely a pin mix-up (e.g. 5V vs. a neighboring pin) than a bad contact, but
+  not confirmed. No multimeter available to verify the physical voltage at A0 independently.
+- **Left unresolved rather than guessed at.** Does not block Chunk 2's main result: the real
+  dry-air (raw=21) and tap-water (raw≈330) sensor readings are internally consistent and
+  already validate `sensor.cpp`/`filter.cpp` on hardware. Revisit with a multimeter if one
+  becomes available.
+- A0 needs to be reconnected to the TDS module's AOUT to resume normal sensor readings
+  (not yet confirmed done as of this entry).

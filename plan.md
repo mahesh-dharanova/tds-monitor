@@ -26,10 +26,11 @@ Roadmap broken into chunks. Edit only on a real scope decision.
    `config.h`, swap point for v2's DS18B20).
    Verified: unit tests against the default curve's known points; a test asserting the
    temperature-correction math at the assumed constant.
-4. [ ] Calibration module — 2-point calibration fit + TDS factor → ppm, always flagged
-   `calibrated:false` until the user supplies real points; rejects points taken from an
-   unsteady reading or that don't fit existing points.
-   Verified: unit tests for the fit math, the rejection rules, and the uncalibrated-by-default
+4. [ ] Calibration module — **single-point** calibration (distilled water as a near-zero/
+   offset reference, confirmed by the user — see `architecture.md`) + TDS factor → ppm,
+   always flagged `calibrated:false` until the user supplies the point; rejects a point taken
+   from an unsteady reading. True 2-point fit against a real reference standard is v2 scope.
+   Verified: unit tests for the offset math, the rejection rule, and the uncalibrated-by-default
    flag.
 5. [ ] Health module — range / stuck-value / warm-up / dry-probe checks, independent of
    calibration.
@@ -60,4 +61,7 @@ Roadmap broken into chunks. Edit only on a real scope decision.
 - Add a DS18B20 temperature probe (wiring: data pin + 4.7kΩ pull-up, per the original
   Claude-Chat draft's diagram).
 - Replace `conductivity.cpp`'s fixed assumed-temperature constant with a real measurement.
+- Source a real conductivity reference standard (e.g. 1413 µS/cm — see
+  `docs/CALIBRATION_PROCEDURE.md`) and upgrade `calibration.cpp` from single-point to a true
+  2-point fit.
 - Re-verify against the host tests and a fresh hardware session.
