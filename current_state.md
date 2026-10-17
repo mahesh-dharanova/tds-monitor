@@ -27,10 +27,15 @@ This is a pointer into git history for the next agent, not a duplicate of it.
 
 ## Next
 
-- Chunk 3: `conductivity.cpp` gets real curve constants from the dry-air/distilled/tap data
-  points above.
-- Chunk 4: `calibration.cpp` applies the single calibration point (distilled water, v=0.508V)
-  as a near-zero/offset reference per the locked-in v1 design decision.
+- **Paused by user decision (2026-10-17):** buying a fresh distilled water bottle and
+  re-testing with it, planned for Monday (next occurrence after 2026-10-17). Chunk 3 is
+  intentionally on hold until then — the current distilled-water reading (~0.51V,
+  reproduced twice with the same bottle) is repeatable but still anomalously high (see open
+  question below), so a fresh bottle is worth checking before it becomes the permanent v1
+  calibration constant baked into `conductivity.cpp`.
+- Once the fresh-bottle reading is in: Chunk 3 (`conductivity.cpp` real curve constants from
+  the dry-air/distilled/tap dataset), then Chunk 4 (`calibration.cpp` applies the single
+  calibration point as a near-zero/offset reference per the locked-in v1 design decision).
 
 ## Open questions / blockers
 
