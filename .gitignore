@@ -116,3 +116,7 @@ tests/.build/
 
 # WiFi credentials — see firmware/tds_monitor/secrets.h.example
 firmware/tds_monitor/secrets.h
+
+# Local-only agent instructions, never pushed to remote
+AGENTS.md
+CLAUDE.md
